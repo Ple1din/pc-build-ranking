@@ -1,110 +1,93 @@
-# Ranking de PC Builds
-Proyecto para organizar, ordenar y filtrar configuraciones de PC (builds) para distintos usos: gaming, edición, animación, etc.  
-Aplica **POO, algoritmos de ordenamiento, búsqueda con árbol y validaciones de compatibilidad**.
+# Proyecto Avance 1 – Algoritmos de Ordenamiento  
+**Tema:** Ranking de PC Builds
+
+Este proyecto organiza, ordena y filtra configuraciones de PC (builds) para distintos usos: gaming, edición, animación, etc.  
+Aplica **POO, algoritmos de ordenamiento y búsqueda con árbol**, además de lectura y escritura de archivos.
 
 ---
 
-## SICT0302B: Toma decisiones
+## 1. Avance del proyecto
+En esta primera etapa el objetivo fue que los datos de las builds pudieran **almacenarse y organizarse dentro de un programa funcional**, usando las estructuras y algoritmos vistos en clase.
 
-### Selecciona y usa una estructura lineal adecuada al problema
-Uso un **`std::vector`** para almacenar las builds porque permite:
-- Acceso aleatorio y rápido a cualquier build.
-- Fácil integración con los algoritmos de ordenamiento.
-- Inserción de nuevas builds al final de la colección.
+- Elegí un **`std::vector`** para almacenar las builds porque:
+  - Permite acceder rápido a cualquier build usando su índice.
+  - Se integra fácilmente con los algoritmos de ordenamiento.
+  - Es práctico para insertar nuevas builds al final.
 
-En el futuro se podrá migrar a una lista doblemente enlazada si es necesario mantener orden de inserción y eliminación frecuente.
+Cada **Build** es un objeto con:
+- Nombre de la build  
+- CPU (marca, modelo, socket, score)  
+- GPU (marca, modelo, VRAM, soporte DLSS/FSR, score)  
+- RAM (capacidad y velocidad)  
+- Motherboard (socket y soporte PCIe)  
+- Fuente de poder (wattage)  
+- Precio total  
+- Score promedio de rendimiento  
+- Calificación de usuarios  
 
-Cada **Build** es un objeto que contiene:
-- Nombre de la build
-- CPU (marca, modelo, socket, score)
-- GPU (marca, modelo, VRAM, soporte DLSS/FSR, score)
-- RAM (capacidad y velocidad)
-- Motherboard (socket y soporte PCIe)
-- Fuente de poder (wattage)
-- Precio total
-- Score promedio de rendimiento
-- Calificación de usuarios
-
-### Selecciona un algoritmo de ordenamiento adecuado al problema
-Para este problema se usan varios algoritmos según el criterio:
-
-- Para ordenar builds por **precio total** → **Merge Sort**, porque es estable y eficiente en datos grandes y no depende de que la lista esté parcialmente ordenada.
-- Para ordenar builds por **score promedio de rendimiento** → **Quick Sort**, por su rapidez en la práctica cuando el pivote está bien elegido.
-- Para ordenar por **marca de CPU o GPU** → **Bubble Sort**, por fines didácticos ya que se usa en listas pequeñas.
-
-Las funciones de ordenamiento se encuentran en `src/utils/Sorts.h`.
-
-### Usa un árbol adecuado para resolver un problema
-Uso un **Árbol Binario de Búsqueda (BST)** para organizar las builds por **precio total**.  
-Permite:
-- Buscar rápidamente builds dentro de un rango de presupuesto.
-- Recorrer en orden ascendente o descendente según se requiera.
-
-Las funciones para crear el árbol, insertar nodos y buscar builds por precio se encuentran en `src/utils/BST.h`.
+Para las búsquedas por presupuesto, implementé un **Árbol Binario de Búsqueda (BST)**, lo que permite encontrar builds en un rango de precio y recorrerlas en orden ascendente o descendente.
 
 ---
 
-## SICT0301B: Evalúa los componentes
+## 2. Cómo usar el programa
+1. Al iniciar, el programa **carga las builds registradas** desde el archivo `builds.csv`.
+2. En el **menú principal** puedes:
+   - Registrar nuevas builds con sus componentes.
+   - Consultar las builds existentes.
+   - Ordenarlas por:
+     - Precio total
+     - Score promedio de rendimiento
+     - Marca de CPU o GPU
+   - Filtrar builds según requisitos (por ejemplo, GPU NVIDIA y RAM ≥ 32 GB).
+   - Buscar builds dentro de un **presupuesto máximo usando el BST**.
+3. Cada vez que agregas una nueva build, esta se guarda al final de `builds.csv` para no tener que recapturarla.
 
-### Presenta Casos de Prueba correctos y completos para todas las funciones y procedimientos del programa
-Los casos de prueba se encuentran en `tests/pruebas.cpp` e incluyen:
-- Inserción y visualización de builds en el vector.
-- Ordenamiento por precio, score y marca.
-- Acceso al BST por presupuesto.
-- Búsqueda de builds por nombre y filtros por marca o RAM.
-
-### Hace un análisis de complejidad correcto y completo para todo el programa y sus componentes
-
-#### Vector de builds
-- Acceso a una build por índice: **O(1)**
-- Búsqueda secuencial por atributo: **O(n)**
-- Inserción al final: **O(1)** amortizado
-- Eliminación (si se implementa): **O(n)** en peor caso
-
-#### Ordenamientos
-- Merge Sort: **O(n log n)**
-- Quick Sort: **O(n log n)** promedio, **O(n²)** peor caso
-- Bubble Sort: **O(n²)**
-
-#### Árbol BST
-- Crear el árbol: **O(n log n)** promedio
-- Insertar un nodo: **O(log n)** promedio
-- Buscar builds por precio: **O(log n)** promedio
+ **Ejemplo rápido:**  
+- Registras una build llamada **“Gaming Entry”**.  
+- Usas la opción para ordenar las builds por **precio** y ves dónde queda ubicada.  
+- Luego buscas builds con **presupuesto menor a $20,000** usando el BST.
 
 ---
 
-## SICT0303B: Implementa acciones científicas
+## 3. Cumplimiento de las sub-competencias
 
-### Implementa mecanismos para consultar información de las estructuras correctos y útiles dentro de un programa
-El programa permite:
-- Buscar builds por nombre (en el vector) — opción en el menú principal.
-- Mostrar reportes ordenados de builds por precio, score o marca — opción en el menú.
-- Obtener builds dentro de un rango de precio usando el BST — opción en el menú.
-
-### Implementa mecanismos de lectura de archivos correctos y útiles dentro de un programa
-Las builds registradas se cargan desde un archivo `builds.csv` al iniciar el programa.
-
-### Implementa mecanismos de escritura de archivos correctos y útiles dentro de un programa
-Las nuevas builds se agregan al final de `builds.csv` con la función `agregarBuild()`, para que no tengan que ser recapturadas cada vez que se corre el programa.
+### SICT0302 – Toma decisiones
+- **Estructura lineal:** usé `std::vector` porque es eficiente para acceder y recorrer las builds y funciona bien con los algoritmos de ordenamiento.
+- **Algoritmos de ordenamiento:**  
+  - Por **precio total → Merge Sort**, porque es estable y eficiente en datos grandes.  
+  - Por **score promedio → Quick Sort**, que es rápido en promedio si el pivote se elige bien.  
+  - Por **marca de CPU o GPU → Bubble Sort**, solo con fines didácticos ya que las listas son pequeñas.  
+- **Árbol BST:** usado para búsquedas por rango de precios. Se inserta y consulta de manera eficiente.
 
 ---
 
-## Ejemplo de Uso
-1. Registrar builds con sus componentes y datos básicos.
-2. Consultar builds existentes.
-3. Ordenar builds por:
-   - Precio
-   - Score de rendimiento
-   - Marca de CPU o GPU
-4. Filtrar builds por requisitos (ejemplo: solo con GPU NVIDIA y RAM ≥ 32 GB).
-5. Buscar builds por presupuesto máximo usando el BST.
+### SICT0301 – Evalúa los componentes
+**Casos de prueba:** en `tests/pruebas.cpp` se verifican:  
+- Inserción y visualización de builds en el vector.  
+- Ordenamiento por precio, score y marca.  
+- Acceso al BST por presupuesto.  
+- Búsqueda de builds por nombre y filtros por atributos.
+
+**Complejidad de los componentes:**  
+- Acceso a una build en el vector: **O(1)**  
+- Inserción al final del vector: **O(1)** amortizado  
+- Búsqueda secuencial: **O(n)**  
+- Eliminación (si se implementa): **O(n)**  
+- **Ordenamiento:**  
+  - Merge Sort: **O(n log n)**  
+  - Quick Sort: **O(n log n)** promedio, **O(n²)** peor caso  
+  - Bubble Sort: **O(n²)**  
+- **BST:**  
+  - Crear árbol: **O(n log n)** promedio  
+  - Insertar nodo: **O(log n)** promedio  
+  - Buscar por precio: **O(log n)** promedio  
 
 ---
 
-## Próximos Avances
-- Validaciones de compatibilidad entre componentes:
-  - Socket CPU ↔ Motherboard
-  - Compatibilidad PCIe GPU ↔ Motherboard
-  - Requerimiento de potencia de la fuente de poder
-- Clasificación automática de las builds en **Gama Baja / Media / Alta** según score promedio.
-- Calificación de builds por usuarios.
+## 4. Próximos avances
+Para los siguientes pasos planeo:
+- Validar la **compatibilidad entre componentes** (socket CPU ↔ motherboard, GPU ↔ PCIe, potencia de la fuente).  
+- Clasificar automáticamente las builds en **Gama Baja / Media / Alta** según su score promedio.  
+- Permitir que los usuarios califiquen las builds y mostrar los resultados.
+
+---
