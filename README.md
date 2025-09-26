@@ -4,7 +4,7 @@ El proyecto aplica **POO, algoritmos de ordenamiento, búsqueda con árbol y val
 
 ---
 
-## 🚀 Objetivo del Proyecto
+##  Objetivo del Proyecto
 - Modelar **componentes** de hardware (CPU, GPU, RAM, etc.) con **polimorfismo**.
 - Construir **ensambles** que validen la **compatibilidad** entre componentes.
 - Permitir **ordenar** las builds por:
