@@ -17,9 +17,9 @@ void mostrarMenu() {
     cout << "\n===== MENU PRINCIPAL =====\n";
     cout << "1. Ver todas las builds\n";
     cout << "2. Agregar una nueva build\n";
-    cout << "3. Ordenar por precio (MergeSort)\n";
-    cout << "4. Ordenar por score de rendimiento (QuickSort)\n";
-    cout << "5. Ordenar por marca de CPU/GPU (BubbleSort)\n";
+    cout << "3. Ordenar por precio (MergeSort, O(n log n))\n";
+    cout << "4. Ordenar por score de rendimiento (QuickSort, O(n log n) promedio)\n";
+    cout << "5. Ordenar por marca de CPU (HeapSort, O(n log n))\n";
     cout << "0. Salir\n";
     cout << "Seleccione una opcion: ";
 }
@@ -80,8 +80,8 @@ int main() {
 
         case 5:
             if (builds.size() > 1) {
-                bubbleSort(builds); // Ordena por marca
-                cout << ">> Builds ordenadas por marca.\n";
+                heapSort(builds); // Ordena por marca de CPU con HeapSort
+                cout << ">> Builds ordenadas por marca de CPU (HeapSort, O(n log n)).\n";
             } else {
                 cout << "No hay suficientes builds para ordenar.\n";
             }
