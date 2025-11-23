@@ -92,6 +92,9 @@ public:
     void setPSU(PSU* p) { psu = p; }
     void setCooler(Cooler* c) { cooler = c; }
     void setCase(Case* c) { casePC = c; }
+    void setNombre(const string& n) { nombre = n; }
+    void clearRAMModules() { rams.clear(); recalcularTotales(); }
+    void clearStorages() { storages.clear(); recalcularTotales(); }
 };
 
 // =========================================================

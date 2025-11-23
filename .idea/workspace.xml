@@ -3,6 +3,11 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="BackendCodeEditorMiscSettings">
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
+    <option name="/Default/RiderDebugger/RiderRestoreDecompile/RestoreDecompileSetting/@EntryValue" value="false" type="bool" />
+  </component>
   <component name="CMakeProjectFlavorService">
     <option name="flavorId" value="CMakePlainProjectFlavor" />
   </component>
@@ -12,7 +17,16 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="63172fa6-48aa-4b33-a7e8-433de9080d32" name="Changes" comment="" />
+    <list default="true" id="63172fa6-48aa-4b33-a7e8-433de9080d32" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/utils/CSVutils.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/utils.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Build.h" beforeDir="false" afterPath="$PROJECT_DIR$/components/Build.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/CPU.h" beforeDir="false" afterPath="$PROJECT_DIR$/components/CPU.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/csv/builds.csv" beforeDir="false" afterPath="$PROJECT_DIR$/csv/builds.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/csv/cpus.csv" beforeDir="false" afterPath="$PROJECT_DIR$/csv/cpus.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/main.cpp" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -24,13 +38,13 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 4
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
   <component name="ProjectId" id="34WHwI7nKPoX5DBkNytsq7fCofl" />
-  <component name="ProjectStatusUIService"><![CDATA[{
-  "uiKindId": "Widget"
-}]]></component>
+  <component name="ProjectStatusUIService">{
+  &quot;uiKindId&quot;: &quot;Widget&quot;
+}</component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -47,6 +61,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
     "last_opened_file_path": "C:/Users/y4r1k/Documentos/Github/pc-build-ranking",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -77,6 +92,7 @@
       <option name="presentableId" value="Default" />
       <updated>1761322644560</updated>
       <workItem from="1761322645768" duration="5006000" />
+      <workItem from="1763876802781" duration="15680000" />
     </task>
     <servers />
   </component>

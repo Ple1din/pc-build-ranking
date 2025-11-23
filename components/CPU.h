@@ -34,6 +34,8 @@ public:
         inferirDatos();
     }
 
+
+
     // ============================================================
     //                      INFERENCIA INTEL / AMD
     // ============================================================
@@ -106,6 +108,8 @@ public:
         // OC en Intel solo en modelos que terminan en K
         soportaOC = (!modelo.empty() && modelo.back() == 'K');
     }
+
+
 
     // ============================================================
     //                      MOSTRAR INFO

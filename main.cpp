@@ -2,15 +2,12 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include <limits>
-#include <algorithm>
 
-// Ajusta esta ruta según tu proyecto:
-//  - "components/Build.h" si está en carpeta components/
-//  - "Build.h" si está en la raíz
 #include "components/Build.h"
 #include "BuildAVL.h"
 #include "Sorts.h"
+#include "utils/utils.h"
+#include "utils/CSVutils.h"
 
 using std::cin;
 using std::cout;
@@ -26,88 +23,6 @@ const string STOR_FILE   = "csv/storages.csv";
 const string PSU_FILE    = "csv/psus.csv";
 const string COOLER_FILE = "csv/coolers.csv";
 const string CASE_FILE   = "csv/cases.csv";
-
-void crearCSVSiNoExiste(const string& filename) {
-    // Intentar abrir para lectura
-    std::ifstream f(filename);
-    if (f.is_open()) {
-        // Ya existe, no hacemos nada
-        return;
-    }
-    f.close();
-
-    // Intentar crearlo vacío
-    std::ofstream out(filename);
-    if (!out.is_open()) {
-        cout << "Error: no se pudo crear el archivo '"
-             << filename
-             << "'. Verifica que exista la carpeta correspondiente (por ejemplo 'csv/').\n";
-        return;
-    }
-
-    // Si quieres, aquí podrías escribir un encabezado, pero tú estás usando solo líneas de datos,
-    // así que lo dejamos completamente vacío.
-    out.close();
-
-    cout << "Archivo '" << filename << "' no existía. Se creó vacío.\n";
-}
-
-// ---------------------------------------------------------
-//                  UTILIDADES GENERALES
-// ---------------------------------------------------------
-
-void limpiarBuffer() {
-    cin.clear();
-    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-}
-
-int pedirEntero(const string& mensaje, int minVal, int maxVal) {
-    int opcion;
-    while (true) {
-        cout << mensaje;
-        if (cin >> opcion) {
-            if (opcion >= minVal && opcion <= maxVal) {
-                limpiarBuffer();
-                return opcion;
-            }
-        } else {
-            cout << "Entrada inválida. Intenta de nuevo.\n";
-            cin.clear();
-        }
-        limpiarBuffer();
-    }
-}
-
-double pedirDouble(const string& mensaje, double minVal = 0.0) {
-    double valor;
-    while (true) {
-        cout << mensaje;
-        if (cin >> valor) {
-            if (valor >= minVal) {
-                limpiarBuffer();
-                return valor;
-            } else {
-                cout << "Debe ser >= " << minVal << ".\n";
-            }
-        } else {
-            cout << "Entrada inválida. Intenta de nuevo.\n";
-            cin.clear();
-        }
-        limpiarBuffer();
-    }
-}
-
-string pedirLinea(const string& mensaje) {
-    cout << mensaje;
-    string linea;
-    std::getline(cin, linea);
-    return linea;
-}
-
-void pausar() {
-    cout << "\nPresiona ENTER para continuar...";
-    std::cin.get();
-}
 
 // ---------------------------------------------------------
 //      CREADORES INTERACTIVOS PARA CADA COMPONENTE
@@ -230,13 +145,13 @@ GPU* crearGPUInteractivo() {
 
 Motherboard* crearMotherboardInteractivo() {
     cout << "=== CREAR NUEVA MOTHERBOARD ===\n";
-    string marca  = pedirLinea("Marca (ej. ASUS, MSI, Gigabyte): ");
-    string nombre = pedirLinea("Nombre comercial (ej. TUF Gaming B550M-Plus): ");
-    string modelo = pedirLinea("Modelo (ej. B550M-PLUS): ");
-    double precio = pedirDouble("Precio aproximado (MXN): ", 0.0);
-    double score  = pedirDouble("Score de calidad (0-100): ", 0.0);
+    const string marca  = pedirLinea("Marca (ej. ASUS, MSI, Gigabyte): ");
+    const string nombre = pedirLinea("Nombre comercial (ej. TUF Gaming B550M-Plus): ");
+    const string modelo = pedirLinea("Modelo (ej. B550M-PLUS): ");
+    const double precio = pedirDouble("Precio aproximado (MXN): ", 0.0);
+    const double score  = pedirDouble("Score de calidad (0-100): ", 0.0);
 
-    Motherboard* mb = new Motherboard(nombre, marca, modelo, precio, score);
+    auto* mb = new Motherboard(nombre, marca, modelo, precio, score);
     cout << "\nMotherboard creada correctamente:\n";
     mb->mostrarInfo();
     return mb;
@@ -346,7 +261,7 @@ Storage* crearStorageInteractivo() {
     double precio = pedirDouble("Precio aproximado (MXN): ", 0.0);
     double score  = pedirDouble("Score de rendimiento (0-100): ", 0.0);
 
-    Storage* s = new Storage(nombre, marca, modelo, tipoStorage,
+    auto* s = new Storage(nombre, marca, modelo, tipoStorage,
                              capacidadGB, lecturaMBs, escrituraMBs,
                              pcieVersion, precio, score);
     cout << "\nUnidad creada correctamente:\n";
@@ -395,7 +310,7 @@ Cooler* crearCoolerInteractivo() {
     double precio = pedirDouble("Precio aproximado (MXN): ", 0.0);
     double score  = pedirDouble("Score de rendimiento (0-100): ", 0.0);
 
-    Cooler* c = new Cooler(nombre, marca, modelo,
+    auto* c = new Cooler(nombre, marca, modelo,
                            tipoCooler, tdpSoportado,
                            tamanoRadiador, altura,
                            precio, score);
@@ -474,160 +389,147 @@ Case* crearCaseInteractivo() {
 }
 
 // ---------------------------------------------------------
-//     CARGAR COMPONENTES DESDE CSV (CPU, GPU, etc.)
+//     HELPERS PARA RECONSTRUIR BUILDS DESDE CSV
 // ---------------------------------------------------------
 
-void cargarCPUs(const string& filename, vector<CPU*>& cpus) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Aviso: no se pudo abrir '" << filename
-             << "' (CPUs). Se iniciará vacío.\n";
-        return;
+CPU* buscarCPU(const vector<CPU*>& cpus, const string& nombre) {
+    if (nombre.empty()) return nullptr;
+    for (CPU* c : cpus) {
+        if (c && c->getNombre() == nombre) return c;
     }
-    string linea;
-    int count = 0;
-    while (std::getline(file, linea)) {
-        if (linea.empty()) continue;
-        CPU* c = new CPU();
-        c->fromCSV(linea);
-        cpus.push_back(c);
-        ++count;
-    }
-    cout << "Se cargaron " << count << " CPUs desde '" << filename << "'.\n";
+    return nullptr;
 }
 
-void cargarGPUs(const string& filename, vector<GPU*>& gpus) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Aviso: no se pudo abrir '" << filename
-             << "' (GPUs). Se iniciará vacío.\n";
-        return;
+GPU* buscarGPU(const vector<GPU*>& gpus, const string& nombre) {
+    if (nombre.empty()) return nullptr;
+    for (GPU* g : gpus) {
+        if (g && g->getNombre() == nombre) return g;
     }
-    string linea;
-    int count = 0;
-    while (std::getline(file, linea)) {
-        if (linea.empty()) continue;
-        GPU* g = new GPU();
-        g->fromCSV(linea);
-        gpus.push_back(g);
-        ++count;
-    }
-    cout << "Se cargaron " << count << " GPUs desde '" << filename << "'.\n";
+    return nullptr;
 }
 
-void cargarMotherboards(const string& filename, vector<Motherboard*>& mbs) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Aviso: no se pudo abrir '" << filename
-             << "' (Motherboards). Se iniciará vacío.\n";
-        return;
+Motherboard* buscarMotherboard(const vector<Motherboard*>& mbs, const string& modelo) {
+    if (modelo.empty()) return nullptr;
+    for (Motherboard* m : mbs) {
+        if (m && m->getModelo() == modelo) return m;
     }
-    string linea;
-    int count = 0;
-    while (std::getline(file, linea)) {
-        if (linea.empty()) continue;
-        Motherboard* m = new Motherboard();
-        m->fromCSV(linea);
-        mbs.push_back(m);
-        ++count;
-    }
-    cout << "Se cargaron " << count << " motherboards desde '" << filename << "'.\n";
+    return nullptr;
 }
 
-void cargarRAMs(const string& filename, vector<RAM*>& rams) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Aviso: no se pudo abrir '" << filename
-             << "' (RAM). Se iniciará vacío.\n";
-        return;
+PSU* buscarPSU(const vector<PSU*>& psus, const string& nombre) {
+    if (nombre.empty()) return nullptr;
+    for (PSU* p : psus) {
+        if (p && p->getNombre() == nombre) return p;
     }
-    string linea;
-    int count = 0;
-    while (std::getline(file, linea)) {
-        if (linea.empty()) continue;
-        RAM* r = new RAM();
-        r->fromCSV(linea);
-        rams.push_back(r);
-        ++count;
-    }
-    cout << "Se cargaron " << count << " módulos RAM desde '" << filename << "'.\n";
+    return nullptr;
 }
 
-void cargarStorages(const string& filename, vector<Storage*>& storages) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Aviso: no se pudo abrir '" << filename
-             << "' (Storage). Se iniciará vacío.\n";
-        return;
+Cooler* buscarCooler(const vector<Cooler*>& coolers, const string& nombre) {
+    if (nombre.empty()) return nullptr;
+    for (Cooler* c : coolers) {
+        if (c && c->getNombre() == nombre) return c;
     }
-    string linea;
-    int count = 0;
-    while (std::getline(file, linea)) {
-        if (linea.empty()) continue;
-        Storage* s = new Storage();
-        s->fromCSV(linea);
-        storages.push_back(s);
-        ++count;
-    }
-    cout << "Se cargaron " << count << " unidades de almacenamiento desde '"
-         << filename << "'.\n";
+    return nullptr;
 }
 
-void cargarPSUs(const string& filename, vector<PSU*>& psus) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Aviso: no se pudo abrir '" << filename
-             << "' (PSUs). Se iniciará vacío.\n";
-        return;
+Case* buscarCase(const vector<Case*>& cases, const string& nombre) {
+    if (nombre.empty()) return nullptr;
+    for (Case* ca : cases) {
+        if (ca && ca->getNombre() == nombre) return ca;
     }
-    string linea;
-    int count = 0;
-    while (std::getline(file, linea)) {
-        if (linea.empty()) continue;
-        PSU* p = new PSU();
-        p->fromCSV(linea);
-        psus.push_back(p);
-        ++count;
-    }
-    cout << "Se cargaron " << count << " PSUs desde '" << filename << "'.\n";
+    return nullptr;
 }
 
-void cargarCoolers(const string& filename, vector<Cooler*>& coolers) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Aviso: no se pudo abrir '" << filename
-             << "' (Coolers). Se iniciará vacío.\n";
-        return;
+RAM* buscarRAM(const vector<RAM*>& rams, const string& nombre) {
+    if (nombre.empty()) return nullptr;
+    for (RAM* r : rams) {
+        if (r && r->getNombre() == nombre) return r;
     }
-    string linea;
-    int count = 0;
-    while (std::getline(file, linea)) {
-        if (linea.empty()) continue;
-        Cooler* c = new Cooler();
-        c->fromCSV(linea);
-        coolers.push_back(c);
-        ++count;
-    }
-    cout << "Se cargaron " << count << " coolers desde '" << filename << "'.\n";
+    return nullptr;
 }
 
-void cargarCases(const string& filename, vector<Case*>& cases) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Aviso: no se pudo abrir '" << filename
-             << "' (Cases). Se iniciará vacío.\n";
-        return;
+Storage* buscarStorage(const vector<Storage*>& storages, const string& nombre) {
+    if (nombre.empty()) return nullptr;
+    for (Storage* s : storages) {
+        if (s && s->getNombre() == nombre) return s;
     }
-    string linea;
-    int count = 0;
-    while (std::getline(file, linea)) {
-        if (linea.empty()) continue;
-        Case* c = new Case();
-        c->fromCSV(linea);
-        cases.push_back(c);
-        ++count;
+    return nullptr;
+}
+
+Build* reconstruirBuildDesdeCSV(
+    const string& linea,
+    const vector<CPU*>& cpus,
+    const vector<Motherboard*>& mbs,
+    const vector<GPU*>& gpus,
+    const vector<PSU*>& psus,
+    const vector<Cooler*>& coolers,
+    const vector<Case*>& cases,
+    const vector<RAM*>& rams,
+    const vector<Storage*>& storages)
+{
+    if (linea.empty()) return nullptr;
+
+    std::stringstream ss(linea);
+
+    string tipo;
+    getline(ss, tipo, ',');
+    if (tipo != "Build") {
+        // línea que no corresponde a una build
+        return nullptr;
     }
-    cout << "Se cargaron " << count << " gabinetes desde '" << filename << "'.\n";
+
+    string nombre;
+    string precioStr, scoreStr;
+    string cpuName, gpuName, mbModelo, psuName, coolerName, caseName;
+    string ramsStr, storStr;
+
+    getline(ss, nombre, ',');
+    getline(ss, precioStr, ',');   // no los usamos directamente
+    getline(ss, scoreStr, ',');    // pero podrías convertirlos si quieres
+
+    getline(ss, cpuName, ',');
+    getline(ss, gpuName, ',');
+    getline(ss, mbModelo, ',');
+    getline(ss, psuName, ',');
+    getline(ss, coolerName, ',');
+    getline(ss, caseName, ',');
+    getline(ss, ramsStr, ',');
+    std::getline(ss, storStr); // último campo (storages), hasta fin de línea
+
+    // Buscar componentes en los catálogos
+    CPU*        cpu    = buscarCPU(cpus, cpuName);
+    Motherboard* mb    = buscarMotherboard(mbs, mbModelo);
+    GPU*        gpu    = buscarGPU(gpus, gpuName);
+    PSU*        psu    = buscarPSU(psus, psuName);
+    Cooler*     cooler = buscarCooler(coolers, coolerName);
+    Case*       casePC = buscarCase(cases, caseName);
+
+    // Construimos la build con los componentes principales
+    auto* b = new Build(nombre, cpu, mb, gpu, psu, cooler, casePC);
+
+    // Agregar RAMs (nombres separados por '|')
+    if (!ramsStr.empty()) {
+        std::stringstream ssR(ramsStr);
+        string token;
+        while (std::getline(ssR, token, '|')) {
+            if (token.empty()) continue;
+            if (RAM* r = buscarRAM(rams, token)) b->addRAM(r);
+        }
+    }
+
+    // Agregar Storages (nombres separados por '|')
+    if (!storStr.empty()) {
+        std::stringstream ssS(storStr);
+        string token;
+        while (std::getline(ssS, token, '|')) {
+            if (token.empty()) continue;
+            if (Storage* s = buscarStorage(storages, token)) b->addStorage(s);
+        }
+    }
+
+    // addRAM/addStorage ya llaman a recalcularTotales,
+    // así que precioTotal y scoreTotal quedan coherentes.
+    return b;
 }
 
 // ---------------------------------------------------------
@@ -636,7 +538,15 @@ void cargarCases(const string& filename, vector<Case*>& cases) {
 
 void cargarBuildsDesdeCSV(const string& filename,
                           vector<Build*>& builds,
-                          BuildAVL& indicePrecio) {
+                          BuildAVL& indicePrecio,
+                          const vector<CPU*>& cpus,
+                          const vector<Motherboard*>& mbs,
+                          const vector<GPU*>& gpus,
+                          const vector<PSU*>& psus,
+                          const vector<Cooler*>& coolers,
+                          const vector<Case*>& cases,
+                          const vector<RAM*>& rams,
+                          const vector<Storage*>& storages) {
     std::ifstream file(filename);
     if (!file.is_open()) {
         cout << "Aviso: no se pudo abrir '" << filename << "'. "
@@ -648,8 +558,15 @@ void cargarBuildsDesdeCSV(const string& filename,
     int count = 0;
     while (std::getline(file, linea)) {
         if (linea.empty()) continue;
-        Build* b = new Build();
-        b->fromCSV(linea); // nombre, precioTotal, scoreTotal
+
+        Build* b = reconstruirBuildDesdeCSV(
+            linea,
+            cpus, mbs, gpus, psus,
+            coolers, cases, rams, storages
+        );
+
+        if (!b) continue;
+
         builds.push_back(b);
         indicePrecio.insert(b);
         ++count;
@@ -657,6 +574,7 @@ void cargarBuildsDesdeCSV(const string& filename,
 
     cout << "Se cargaron " << count << " builds desde '" << filename << "'.\n\n";
 }
+
 
 void guardarBuildsEnCSV(const string& filename,
                         const vector<Build*>& builds) {
@@ -769,7 +687,7 @@ void listarBuildsBase(const vector<Build*>& builds) {
     }
 }
 
-int encontrarIndice(const vector<Build*>& builds, Build* objetivo) {
+int encontrarIndice(const vector<Build*>& builds, const Build* objetivo) {
     for (size_t i = 0; i < builds.size(); ++i) {
         if (builds[i] == objetivo) {
             return static_cast<int>(i);
@@ -785,7 +703,7 @@ void listarBuildsPorPrecio(const vector<Build*>& builds, const BuildAVL& indice)
     }
 
     cout << "=== BUILDS ORDENADAS POR PRECIO (AVL, menor a mayor) ===\n";
-    indice.inOrder([&builds](Build* b) {
+    indice.inOrder([&builds](const Build* b) {
         int idx = encontrarIndice(builds, b);
         mostrarResumenCorto(b, idx);
     });
@@ -855,8 +773,32 @@ void verDetalleBuild(const vector<Build*>& builds) {
     }
 
     cout << "\n=== DETALLE DE BUILD ===\n";
-    b->mostrarDetalle();  // usa toda la lógica de compatibilidad
+    cout << "Nombre: " << b->getNombre() << "\n";
+    cout << "Precio total: $" << b->getPrecio() << "\n";
+    cout << "Score total: " << b->getScore() << "\n\n";
+
+    cout << "---- COMPONENTES ----\n";
+    if (b->getCPU()) cout << "CPU: " << b->getCPU()->getNombre() << "\n";
+    if (b->getMotherboard()) cout << "Motherboard: " << b->getMotherboard()->getNombre() << "\n";
+    if (b->getGPU()) cout << "GPU: " << b->getGPU()->getNombre() << "\n";
+    if (b->getPSU()) cout << "PSU: " << b->getPSU()->getNombre() << "\n";
+    if (b->getCooler()) cout << "Cooler: " << b->getCooler()->getNombre() << "\n";
+    if (b->getCase()) cout << "Gabinete: " << b->getCase()->getNombre() << "\n";
+
+    cout << "RAM:\n";
+    for (auto* r : b->getRAMModules()) {
+        cout << "   - " << r->getNombre() << "\n";
+    }
+
+    cout << "Almacenamiento:\n";
+    for (auto* s : b->getStorages()) {
+        cout << "   - " << s->getNombre() << "\n";
+    }
+
+    cout << "\n---- RESULTADO DE COMPATIBILIDAD ----\n";
+    b->mostrarDetalle(); // usa la lógica de compatibilidad interna
 }
+
 
 // ---------------------------------------------------------
 //           OPERACIONES CRUD SOBRE LAS BUILDS
@@ -888,34 +830,93 @@ void agregarBuild(vector<Build*>& builds,
     Cooler* cooler = elegirDeLista(coolers, "Coolers", true);
     Case* casePC = elegirDeLista(cases, "Gabinetes", true);
 
-    Build* b = new Build(nombre, cpu, mb, gpu, psu, cooler, casePC);
+    auto* b = new Build(nombre, cpu, mb, gpu, psu, cooler, casePC);
 
     // Seleccionar RAM
-    int nRam = 0;
+    const int maxRAMSlots = mb->getSlotsRAM();
     if (!ramsCatalog.empty()) {
-        nRam = pedirEntero("¿Cuántos módulos de RAM quieres agregar? (0-8): ", 0, 8);
+        int nRam = 0;
+        nRam = pedirEntero("¿Cuántos módulos de RAM quieres agregar? (0-" + std::to_string(maxRAMSlots) + "): ",0,maxRAMSlots);
         for (int i = 0; i < nRam; ++i) {
             cout << "Selecciona RAM #" << (i + 1) << ":\n";
-            RAM* r = elegirDeLista(ramsCatalog, "RAM", false);
-            if (r) b->addRAM(r);
+            if (RAM* r = elegirDeLista(ramsCatalog, "RAM", false)) b->addRAM(r);
         }
     } else {
         cout << "Aviso: no hay módulos RAM cargados.\n";
     }
 
     // Seleccionar Storage
-    int nStor = 0;
     if (!storCatalog.empty()) {
-        nStor = pedirEntero("¿Cuántas unidades de almacenamiento quieres agregar? (0-8): ", 0, 8);
+        int nStor = 0;
+        int formatStor = 0;
+        int maxStorSlots = 0;
+        string format = "";
+
+        // Elegir formato
+        formatStor = pedirEntero("¿Qué formato de almacenamiento quieres agregar? 1: SATA  2: M.2: ", 1, 2);
+        if (formatStor == 1) {
+            maxStorSlots = mb->getSataPorts();
+            format = "SATA";
+        } else {
+            maxStorSlots = mb->getM2Slots();
+            format = "M.2";
+        }
+
+        // Seleccionar cuántos
+        nStor = pedirEntero("¿Cuántas unidades de almacenamiento quieres agregar? (0-"
+                             + std::to_string(maxStorSlots) + "): ",
+                             0, maxStorSlots );
+
+        // Filtrar catálogo dependiendo del formato
+        vector<Storage*> filtrados;
+        for (auto* st : storCatalog) {
+            if (formatStor == 1) {
+                if (st->getTipoStorage() == "HDD" || st->getTipoStorage() == "SATA")
+                    filtrados.push_back(st);
+            } else {
+                if (st->getTipoStorage().rfind("M.2", 0) == 0)  // "M.2-SATA", "M.2-NVMe"
+                    filtrados.push_back(st);
+            }
+        }
+
+        if (filtrados.empty()) {
+            cout << "No hay unidades compatibles con el formato " << format << ".\n";
+            return;
+        }
+
+        // Elegir los filtrados
         for (int i = 0; i < nStor; ++i) {
             cout << "Selecciona Storage #" << (i + 1) << ":\n";
-            Storage* s = elegirDeLista(storCatalog, "Storage", false);
+            Storage* s = elegirDeLista(filtrados, "Storage", false);
             if (s) b->addStorage(s);
         }
     } else {
         cout << "Aviso: no hay unidades de almacenamiento cargadas.\n";
     }
+    auto problemas = b->validarCompatibilidad();
+    if (!problemas.empty()) {
+        cout << "\n⚠ Se detectaron problemas de compatibilidad / bottleneck en la nueva build:\n";
+        for (const auto& r : problemas) {
+            string tipo;
+            if (!r.compatible && r.bottleneck)      tipo = "INCOMPATIBLE + BOTTLENECK";
+            else if (!r.compatible)                 tipo = "INCOMPATIBLE";
+            else if (r.bottleneck)                  tipo = "BOTTLENECK";
+            else                                    tipo = "ADVERTENCIA";
 
+            cout << " - [" << tipo << "] " << r.message << "\n";
+        }
+
+        int cont = pedirEntero(
+            "\n¿Deseas GUARDAR esta build a pesar de los problemas? (1=Sí, 0=No): ",
+            0, 1
+        );
+
+        if (cont == 0) {
+            delete b;
+            cout << "Build descartada por incompatibilidad/bottleneck.\n";
+            return;
+        }
+    }
     // Mostrar resumen y compatibilidad de la nueva build
     cout << "\nBuild creada:\n";
     b->mostrarDetalle();
@@ -926,13 +927,22 @@ void agregarBuild(vector<Build*>& builds,
     cout << "Build agregada correctamente.\n";
 }
 
-void editarBuild(vector<Build*>& builds, BuildAVL& indice) {
+void editarBuild(const vector<Build*>& builds,
+                 BuildAVL& indice,
+                 const vector<CPU*>& cpus,
+                 const vector<Motherboard*>& mbs,
+                 const vector<GPU*>& gpus,
+                 const vector<PSU*>& psus,
+                 const vector<Cooler*>& coolers,
+                 const vector<Case*>& cases,
+                 const vector<RAM*>& ramsCatalog,
+                 const vector<Storage*>& storCatalog) {
     if (builds.empty()) {
         cout << "No hay builds para editar.\n";
         return;
     }
 
-    cout << "=== EDITAR BUILD (solo nombre por ahora) ===\n";
+    cout << "=== EDITAR BUILD ===\n";
     listarBuildsBase(builds);
     int idx = pedirEntero("Selecciona el índice de la build a editar: ", 0,
                           static_cast<int>(builds.size()) - 1);
@@ -943,26 +953,125 @@ void editarBuild(vector<Build*>& builds, BuildAVL& indice) {
         return;
     }
 
-    string nuevoNombre = pedirLinea("Nuevo nombre (deja vacío para conservar): ");
-    if (nuevoNombre.empty()) {
-        cout << "Nombre sin cambios.\n";
-        return;
-    }
-
-    // Sacamos del AVL porque cambia la clave (nombre influye si se empata en precio)
+    // 1) Sacar del AVL usando la clave vieja (precio+nombre actual)
     indice.remove(b);
 
-    double precio = b->getPrecio();
-    double score  = b->getScore();
-    string lineaCSV = "Build," + nuevoNombre + "," +
-                      std::to_string(precio) + "," +
-                      std::to_string(score);
-    b->fromCSV(lineaCSV);
+    // 2) Guardar copia del estado anterior por si se cancela
+    string oldNombre = b->getNombre();
+    CPU* oldCPU = b->getCPU();
+    Motherboard* oldMB = b->getMotherboard();
+    GPU* oldGPU = b->getGPU();
+    PSU* oldPSU = b->getPSU();
+    Cooler* oldCooler = b->getCooler();
+    Case* oldCase = b->getCase();
 
+    vector<RAM*> oldRams = b->getRAMModules();
+    vector<Storage*> oldStorages = b->getStorages();
+
+    // 3) Editar nombre
+    cout << "Nombre actual: " << oldNombre << "\n";
+    string nuevoNombre = pedirLinea("Nuevo nombre (ENTER = conservar): ");
+    if (!nuevoNombre.empty()) {
+        b->setNombre(nuevoNombre);
+    }
+
+    // 4) Elegir nuevos componentes principales
+    cout << "\nSelecciona los NUEVOS componentes para esta build.\n";
+    cout << "(Si quieres mantener alguno igual, simplemente vuelve a elegirlo.)\n\n";
+
+    CPU* newCPU = elegirDeLista(cpus, "CPUs", false);
+    Motherboard* newMB = elegirDeLista(mbs, "Motherboards", false);
+    GPU* newGPU = elegirDeLista(gpus, "GPUs (se puede omitir)", true);
+    PSU* newPSU = elegirDeLista(psus, "PSUs", false);
+    Cooler* newCooler = elegirDeLista(coolers, "Coolers", true);
+    Case* newCase = elegirDeLista(cases, "Gabinetes", true);
+
+    b->setCPU(newCPU);
+    b->setMotherboard(newMB);
+    b->setGPU(newGPU);
+    b->setPSU(newPSU);
+    b->setCooler(newCooler);
+    b->setCase(newCase);
+
+    // 5) RAM
+    b->clearRAMModules();
+    if (!ramsCatalog.empty()) {
+        int nRam = pedirEntero("¿Cuántos módulos de RAM quieres en la build? (0-8): ", 0, 8);
+        for (int i = 0; i < nRam; ++i) {
+            cout << "Selecciona RAM #" << (i + 1) << ":\n";
+            if (RAM* r = elegirDeLista(ramsCatalog, "RAM", false)) b->addRAM(r);
+        }
+    } else {
+        cout << "Aviso: no hay RAM en el catálogo, se dejará sin RAM.\n";
+    }
+
+    // 6) Storage
+    b->clearStorages();
+    if (!storCatalog.empty()) {
+        int nStor = pedirEntero("¿Cuántas unidades de almacenamiento quieres? (0-8): ", 0, 8);
+        for (int i = 0; i < nStor; ++i) {
+            cout << "Selecciona Storage #" << (i + 1) << ":\n";
+            if (Storage* s = elegirDeLista(storCatalog, "Storage", false)) b->addStorage(s);
+        }
+    } else {
+        cout << "Aviso: no hay unidades de almacenamiento en el catálogo.\n";
+    }
+
+    // 7) Recalcular totales con los nuevos componentes
+    b->recalcularTotales();
+
+    // 8) Validar compatibilidad y bottlenecks
+    auto problemas = b->validarCompatibilidad();
+    if (!problemas.empty()) {
+        cout << "\n⚠ Se detectaron problemas de compatibilidad / bottleneck:\n";
+        for (const auto& r : problemas) {
+            string tipo;
+            if (!r.compatible && r.bottleneck)      tipo = "INCOMPATIBLE + BOTTLENECK";
+            else if (!r.compatible)                 tipo = "INCOMPATIBLE";
+            else if (r.bottleneck)                  tipo = "BOTTLENECK";
+            else                                    tipo = "ADVERTENCIA";
+
+            cout << " - [" << tipo << "] " << r.message << "\n";
+        }
+
+        int cont = pedirEntero(
+            "\n¿Deseas GUARDAR esta build a pesar de los problemas? (1=Sí, 0=No): ",
+            0, 1
+        );
+
+        if (cont == 0) {
+            // 9) Revertir al estado anterior
+            b->setNombre(oldNombre);
+            b->setCPU(oldCPU);
+            b->setMotherboard(oldMB);
+            b->setGPU(oldGPU);
+            b->setPSU(oldPSU);
+            b->setCooler(oldCooler);
+            b->setCase(oldCase);
+
+            b->clearRAMModules();
+            for (auto* r : oldRams) {
+                b->addRAM(r);
+            }
+
+            b->clearStorages();
+            for (auto* s : oldStorages) {
+                b->addStorage(s);
+            }
+
+            b->recalcularTotales();
+            indice.insert(b);  // reinsertar con los valores viejos
+
+            cout << "Cambios descartados. La build se mantiene como antes.\n";
+            return;
+        }
+    }
+
+    // 10) Insertar versión EDITADA en el AVL
     indice.insert(b);
-
-    cout << "Build editada correctamente.\n";
+    cout << "Build actualizada exitosamente.\n";
 }
+
 
 void eliminarBuild(vector<Build*>& builds, BuildAVL& indice) {
     if (builds.empty()) {
@@ -1025,104 +1134,160 @@ void menuComponentes(vector<CPU*>& cpus,
         cout << "\n";
 
         switch (op) {
-            case 1:
+            case 1: {
+                cout << "=== CPUs ===\n";
+                cout << "Opciones de ordenamiento:\n";
+                cout << "1) Precio\n2) Score\n3) Marca\n4) Sin ordenar\n";
+                int opCPU = pedirEntero("Elige opción: ", 1, 4);
+                if (opCPU == 1) Sorts::ordenarPorPrecio(cpus);
+                else if (opCPU == 2) Sorts::ordenarPorScore(cpus);
+                else if (opCPU == 3) Sorts::ordenarPorMarca(cpus);
                 listarComponentes(cpus, "CPUs");
                 pausar();
                 break;
+            }
             case 2: {
-                CPU* nuevo = crearCPUInteractivo();
-                if (nuevo) {
+                if (CPU* nuevo = crearCPUInteractivo()) {
                     cpus.push_back(nuevo);
                     cout << "CPU agregado al catálogo.\n";
                 }
                 pausar();
                 break;
             }
-            case 3:
+            case 3: {
+                cout << "=== Motherboards ===\n";
+                cout << "Opciones de ordenamiento:\n";
+                cout << "1) Precio\n2) Score\n3) Marca\n4) Sin ordenar\n";
+                int opMB = pedirEntero("Elige opción: ", 1, 4);
+                if (opMB == 1) Sorts::ordenarPorPrecio(mbs);
+                else if (opMB == 2) Sorts::ordenarPorScore(mbs);
+                else if (opMB == 3) Sorts::ordenarPorMarca(mbs);
                 listarComponentes(mbs, "Motherboards");
                 pausar();
                 break;
+            }
             case 4: {
-                Motherboard* nuevaMB = crearMotherboardInteractivo();
-                if (nuevaMB) {
+                if (Motherboard* nuevaMB = crearMotherboardInteractivo()) {
                     mbs.push_back(nuevaMB);
                     cout << "Motherboard agregada al catálogo.\n";
                 }
                 pausar();
                 break;
             }
-            case 5:
+            case 5: {
+                cout << "=== GPUs ===\n";
+                cout << "Opciones de ordenamiento:\n";
+                cout << "1) Precio\n2) Score\n3) Marca\n4) Sin ordenar\n";
+                int opGPU = pedirEntero("Elige opción: ", 1, 4);
+                if (opGPU == 1) Sorts::ordenarPorPrecio(gpus);
+                else if (opGPU == 2) Sorts::ordenarPorScore(gpus);
+                else if (opGPU == 3) Sorts::ordenarPorMarca(gpus);
                 listarComponentes(gpus, "GPUs");
                 pausar();
                 break;
+            }
             case 6: {
-                GPU* nuevaGPU = crearGPUInteractivo();
-                if (nuevaGPU) {
+                if (GPU* nuevaGPU = crearGPUInteractivo()) {
                     gpus.push_back(nuevaGPU);
                     cout << "GPU agregada al catálogo.\n";
                 }
                 pausar();
                 break;
             }
-            case 7:
+            case 7:{
+                cout << "=== PSUs ===\n";
+                cout << "Opciones de ordenamiento:\n";
+                cout << "1) Precio\n2) Score\n3) Marca\n4) Sin ordenar\n";
+                int opPSU = pedirEntero("Elige opción: ", 1, 4);
+                if (opPSU == 1) Sorts::ordenarPorPrecio(psus);
+                else if (opPSU == 2) Sorts::ordenarPorScore(psus);
+                else if (opPSU == 3) Sorts::ordenarPorMarca(psus);
                 listarComponentes(psus, "PSUs");
                 pausar();
                 break;
+            }
             case 8: {
-                PSU* nuevaPSU = crearPSUInteractivo();
-                if (nuevaPSU) {
+                if (PSU* nuevaPSU = crearPSUInteractivo()) {
                     psus.push_back(nuevaPSU);
                     cout << "PSU agregada al catálogo.\n";
                 }
                 pausar();
                 break;
             }
-            case 9:
+            case 9: {
+                cout << "=== Coolers ===\n";
+                cout << "Opciones de ordenamiento:\n";
+                cout << "1) Precio\n2) Score\n3) Marca\n4) Sin ordenar\n";
+                int opCoolers = pedirEntero("Elige opción: ", 1, 4);
+                if (opCoolers == 1) Sorts::ordenarPorPrecio(coolers);
+                else if (opCoolers == 2) Sorts::ordenarPorScore(coolers);
+                else if (opCoolers == 3) Sorts::ordenarPorMarca(coolers);
                 listarComponentes(coolers, "Coolers");
                 pausar();
                 break;
+            }
             case 10: {
-                Cooler* nuevoCooler = crearCoolerInteractivo();
-                if (nuevoCooler) {
+                if (Cooler* nuevoCooler = crearCoolerInteractivo()) {
                     coolers.push_back(nuevoCooler);
                     cout << "Cooler agregado al catálogo.\n";
                 }
                 pausar();
                 break;
             }
-            case 11:
+            case 11: {
+                cout << "=== Gabinetes ===\n";
+                cout << "Opciones de ordenamiento:\n";
+                cout << "1) Precio\n2) Score\n3) Marca\n4) Sin ordenar\n";
+                int opGabinetes = pedirEntero("Elige opción: ", 1, 4);
+                if (opGabinetes == 1) Sorts::ordenarPorPrecio(cases);
+                else if (opGabinetes == 2) Sorts::ordenarPorScore(cases);
+                else if (opGabinetes == 3) Sorts::ordenarPorMarca(cases);
                 listarComponentes(cases, "Gabinetes");
                 pausar();
                 break;
+            }
             case 12: {
-                Case* nuevoCase = crearCaseInteractivo();
-                if (nuevoCase) {
+                if (Case* nuevoCase = crearCaseInteractivo()) {
                     cases.push_back(nuevoCase);
                     cout << "Gabinete agregado al catálogo.\n";
                 }
                 pausar();
                 break;
             }
-            case 13:
-                listarComponentes(rams, "RAM");
+            case 13: {
+                cout << "=== RAMs ===\n";
+                cout << "Opciones de ordenamiento:\n";
+                cout << "1) Precio\n2) Score\n3) Marca\n4) Sin ordenar\n";
+                int opRAM = pedirEntero("Elige opción: ", 1, 4);
+                if (opRAM == 1) Sorts::ordenarPorPrecio(rams);
+                else if (opRAM == 2) Sorts::ordenarPorScore(rams);
+                else if (opRAM == 3) Sorts::ordenarPorMarca(rams);
+                listarComponentes(rams, "RAMs");
                 pausar();
                 break;
+            }
             case 14: {
-                RAM* nuevaRAM = crearRAMInteractivo();
-                if (nuevaRAM) {
+                if (RAM* nuevaRAM = crearRAMInteractivo()) {
                     rams.push_back(nuevaRAM);
                     cout << "RAM agregada al catálogo.\n";
                 }
                 pausar();
                 break;
             }
-            case 15:
-                listarComponentes(storages, "Storage");
+            case 15: {
+                cout << "=== Storages ===\n";
+                cout << "Opciones de ordenamiento:\n";
+                cout << "1) Precio\n2) Score\n3) Marca\n4) Sin ordenar\n";
+                int opStorage = pedirEntero("Elige opción: ", 1, 4);
+                if (opStorage == 1) Sorts::ordenarPorPrecio(storages);
+                else if (opStorage == 2) Sorts::ordenarPorScore(storages);
+                else if (opStorage == 3) Sorts::ordenarPorMarca(storages);
+                listarComponentes(storages, "Storages");
                 pausar();
                 break;
+            }
             case 16: {
-                Storage* nuevoStor = crearStorageInteractivo();
-                if (nuevoStor) {
+                if (Storage* nuevoStor = crearStorageInteractivo()) {
                     storages.push_back(nuevoStor);
                     cout << "Unidad de almacenamiento agregada al catálogo.\n";
                 }
@@ -1178,7 +1343,7 @@ T* elegirFiltrado(vector<T*>& lista,
 
     // Mostrar lista
     cout << "\n=== COMPONENTES DISPONIBLES ===\n";
-    for (int i = 0; i < (int)ordenada.size(); i++) {
+    for (int i = 0; i < static_cast<int>(ordenada.size()); i++) {
         auto* e = ordenada[i];
         CompatResult r = advertidor(e);
 
@@ -1215,7 +1380,7 @@ void mostrarMenu() {
     cout << "4) Buscar builds por rango de PRECIO (AVL)\n";
     cout << "5) Ver DETALLE y compatibilidad de una build\n";
     cout << "6) Agregar nueva build (usando componentes)\n";
-    cout << "7) Editar build (nombre)\n";
+    cout << "7) Editar build\n";
     cout << "8) Eliminar build\n";
     cout << "9) Ver catálogo de componentes\n";
     cout << "10) Guardar builds en CSV\n";
@@ -1274,8 +1439,19 @@ int main() {
     cargarStorages(STOR_FILE, storages);
     cout << "Cargado Storages...\n";
 
-    // Cargar builds agregadas previamente (sin componentes enlazados)
-    cargarBuildsDesdeCSV(BUILDS_FILE, builds, indicePrecio);
+    // Cargar builds agregadas previamente (reconstruyendo componentes)
+    cargarBuildsDesdeCSV(BUILDS_FILE,
+                     builds,
+                     indicePrecio,
+                     cpus,
+                     motherboards,
+                     gpus,
+                     psus,
+                     coolers,
+                     cases,
+                     rams,
+                     storages);
+
 
     bool salir = false;
     while (!salir) {
@@ -1311,9 +1487,12 @@ int main() {
                 pausar();
                 break;
             case 7:
-                editarBuild(builds, indicePrecio);
+                editarBuild(builds, indicePrecio,
+                            cpus, motherboards, gpus, psus,
+                            coolers, cases, rams, storages);
                 pausar();
                 break;
+
             case 8:
                 eliminarBuild(builds, indicePrecio);
                 pausar();
