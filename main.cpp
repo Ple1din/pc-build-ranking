@@ -4,8 +4,8 @@
 #include <fstream>
 
 #include "components/Build.h"
-#include "BuildAVL.h"
-#include "Sorts.h"
+#include "utils/BuildAVL.h"
+#include "utils/Sorts.h"
 #include "utils/utils.h"
 #include "utils/CSVutils.h"
 
@@ -1351,8 +1351,7 @@ T* elegirFiltrado(vector<T*>& lista,
         e->mostrarInfo();
 
         // Asumiendo que CompatResult tiene:
-        // bool warning;
-        // std::string message;
+
         if (r.bottleneck)
             cout << "   ⚠ Advertencia: " << r.message << "\n";
 

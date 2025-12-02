@@ -5,7 +5,7 @@
 #include <functional>
 #include <string>
 #include <algorithm>
-#include "components/Build.h"
+#include "../components/Build.h"
 
 // Árbol AVL de builds ordenado por:
 // 1) Precio total (Build::getPrecio())

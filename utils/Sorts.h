@@ -9,7 +9,7 @@ class Sorts {
 public:
 
     // -------------------------------
-    //  ORDENAMIENTOS CON std::sort
+    //  ORDENAMIENTOS
     // -------------------------------
     template<typename T>
     static void ordenarPorPrecio(vector<T*>& v) {
