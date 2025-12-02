@@ -1,8 +1,7 @@
 # Proyecto Avance 2 – Estructuras  
 **Tema:** Ranking de PC Builds  
 
-Este proyecto organiza, ordena y filtra configuraciones de PC (builds) para distintos usos: gaming, edición, animación, etc.  
-Aplica **Programación Orientada a Objetos (POO)**, **algoritmos de ordenamiento eficientes**, y **lectura/escritura de archivos CSV** para almacenar la información de manera persistente.
+Este proyecto implementa un sistema completo para administrar configuraciones de computadoras (PC Builds), integrando estructuras de datos avanzadas, mecanismos de compatibilidad entre componentes, ordenamientos eficientes y persistencia mediante archivos externos. Este avance consolida el sistema con la inclusión de un Árbol AVL implementado desde cero, un MergeSort propio, ampliación del sistema de compatibilidad y guardado automático del inventario.
 
 ---
 
@@ -52,7 +51,153 @@ En este segundo avance, el proyecto evoluciona a un sistema más robusto que int
 
 ---
 
-## 4. Cómo compilar y ejecutar el programa
+## 4. Avance 3
+
+Este avance consolida el sistema integrando estructuras y algoritmos avanzados, así como guardado persistente automático.
+
+Las funcionalidades agregadas son:
+
+#Árbol AVL
+
+El AVL reemplaza al vector como estructura principal para almacenar las builds.
+Cada inserción mantiene el árbol balanceado mediante:
+
+-Cálculo de alturas
+
+-Factor de balance
+
+-Rotaciones simples (LL, RR)
+
+-Rotaciones dobles (LR, RL)
+
+-Funcionalidades soportadas:
+
+-Insertar builds en orden por precio
+
+-Buscar por rangos de precios
+
+-Recorrer en orden ascendente
+
+-Mostrar builds completamente ordenadas sin usar sort
+
+Razón de uso:
+
+El AVL garantiza:
+
+-O(log n) en inserciones, búsquedas y eliminaciones
+
+-Ordenamiento permanente sin necesidad de relanzar algoritmos
+
+-Excelente desempeño incluso con muchos elementos
+
+#MergeSort como algoritmo de ordenamiento secundario
+
+Aunque el AVL ya ordena por precio, se requiere ordenamiento por score.
+Para ello se implementó un MergeSort desde cero, con:
+
+-División recursiva
+
+-Fusión ordenada
+
+-Estabilidad
+
+-Control explícito de índices
+
+Uso:
+
+-Se extrae el inventario desde el AVL hacia un vector.
+
+-Se aplica MergeSort para ordenar ese vector por score.
+
+Razón:
+
+-MergeSort garantiza estabilidad y rendimiento constante incluso en el peor caso, algo necesario para rankings de builds.
+
+#Guardado automático del inventario del usuario
+
+Al finalizar el programa, se guarda el inventario en builds_guardado.csv.
+
+Al iniciar el programa:
+
+-Si existe builds_guardado.csv, se carga y el usuario continúa donde lo dejó.
+
+-Si no existe, se carga la base por defecto.
+
+Esto simula un sistema de guardado de progreso típico de aplicaciones reales.
+
+#Módulo completo de compatibilidad entre componentes
+
+El sistema valida automáticamente compatibilidad entre todas las piezas:
+
+Compatibilidad	Verifica
+CPU ↔ Motherboard	Socket, generación, chipset
+RAM ↔ Motherboard	Tipo DDRx, frecuencia máxima
+Storage ↔ Motherboard	PCIe / SATA, soporte NVMe
+GPU ↔ PSU	Consumo eléctrico, margen seguro
+Motherboard ↔ Case	Form factor (ATX, mATX, ITX)
+Cooler ↔ CPU	Tamaño, socket soportado
+
+Estas reglas introducen realismo y aseguran builds funcionales.
+
+El sistema pasó de ser estático a dinámico y escalable:
+
+Lectura de catálogos desde archivos CSV
+
+Ya no se crean componentes manualmente. En su lugar, el programa carga catálogos completos de:
+
+-CPUs
+
+-GPUs
+
+-Motherboards
+
+-RAM
+
+-Storage
+
+-PSUs
+
+-Cases
+
+-Coolers
+
+Esto vuelve el sistema modular y actualizable sin modificar el código.
+
+#Búsqueda y filtrado de componentes
+
+El usuario puede explorar catálogos completos y seleccionar los componentes adecuados para formar una build.
+
+#Compatibilidad entre componentes
+
+Cada clase (CPU, Motherboard, GPU, etc.) incluye funciones que evalúan compatibilidad realista basándose en:
+
+-Socket
+
+-Chipset
+
+-PCIe
+
+-TDP
+
+-Frecuencias de RAM
+
+-Factor de forma
+
+-Límites de potencia
+
+-Slots M.2
+
+-Soporte de overclock
+
+#Menú ampliado
+
+Se agregó un sistema estructurado de opciones para registrar, consultar y filtrar builds y componentes.
+
+
+---
+
+
+## 5. Cómo compilar y ejecutar el programa
 
 ### Opción 1: usando script automatizado  
 Ejecuta el archivo `run.sh` (en Linux/Mac) o `run.bat` (en Windows).  
@@ -62,32 +207,16 @@ Estos scripts realizan automáticamente la compilación y ejecución del program
 Si los scripts no funcionan, puedes ejecutar los siguientes comandos:
 
 **Compilación:**
-g++ main.cpp Build.cpp CSVUtils.cpp Sorts.cpp -o pc_ranking
+g++ main.cpp -o pc_ranking
 ./pc_ranking
-### Menú principal del programa
-
-Ver todas las builds
-
-Agregar una nueva build
-
-Ordenar por precio (MergeSort)
-
-Ordenar por score (QuickSort)
-
-Ordenar por marca de CPU (HeapSort)
-
-Salir
-
-yaml
-Copiar código
 
 ---
 
-## 5. Cumplimiento de las sub-competencias
+## 6. Cumplimiento de las sub-competencias
 
 ### SICT0301 – Evalúa los componentes
 
-#### Análisis de complejidad correcto y completo
+#### Análisis de complejidad
 
 **Estructura principal:** `std::vector`
 
@@ -104,21 +233,32 @@ Copiar código
 
 | Algoritmo | Propósito | Estabilidad | Complejidad (Mejor) | Complejidad (Promedio) | Complejidad (Peor) |
 |------------|------------|--------------|---------------------|------------------------|--------------------|
-| MergeSort | Ordenar por precio | Estable | O(n log n) | O(n log n) | O(n log n) |
-| QuickSort | Ordenar por score | No estable | O(n log n) | O(n log n) | O(n²) |
-| HeapSort | Ordenar por marca de CPU | No estable | O(n log n) | O(n log n) | O(n log n) |
+| MergeSort | Ordenar por score | Estable | O(n log n) | O(n log n) | O(n log n) |
 
-**Análisis:**
+**Razones técnicas para seleccionarlo:**
 
-- **MergeSort** fue elegido para ordenar por precio por ser **estable**, manteniendo el orden de builds con igual costo.  
-- **QuickSort** se usa para el score, priorizando su **rapidez promedio**.  
-- **HeapSort** se usa para el CPU, garantizando **rendimiento constante O(n log n)** y sin requerir memoria adicional.
+-Garantiza estabilidad (importante para builds con igual score).
 
-Estos algoritmos reflejan diferentes estrategias de eficiencia:
+-No cae jamás a O(n²).
 
-- **MergeSort:** estabilidad + consistencia.  
-- **QuickSort:** rendimiento promedio alto.  
-- **HeapSort:** rendimiento constante garantizado.  
+-Permite ordenar vectores de gran tamaño sin pérdida de rendimiento.
+
+-Es más predecible que Quicksort en casos adversos.  
+
+#Orden implícito mediante Árbol AVL
+
+El AVL ordena por precio sin ejecutar algoritmos de ordenamiento explícitos.
+
+Ordenamiento efectivo:
+
+El recorrido inorder entrega el inventario en O(n) completamente ordenado.
+
+Complejidad de mantenimiento:
+Operación	Complejidad
+Insertar	O(log n)
+Buscar	O(log n)
+Eliminar	O(log n)
+Recorrer	O(n)
 
 ---
 
@@ -131,25 +271,35 @@ Se seleccionó `std::vector` como estructura principal debido a:
 - Acceso aleatorio directo O(1).  
 - Integración natural con algoritmos de la STL.  
 - Alta eficiencia en recorridos secuenciales y ordenamientos.  
-- Bajo consumo de memoria comparado con `list` o `deque`.  
 
 **Justificación:**  
 El proyecto requiere recorrer y ordenar con frecuencia el conjunto de builds, no insertar ni eliminar en medio del contenedor.  
 Por lo tanto, `vector` es la estructura más eficiente y adecuada al contexto.
 
 ---
+##Árbol AVL
 
-#### Selección del algoritmo de ordenamiento adecuado
+Es la estructura principal del programa.
 
-| Criterio de orden | Algoritmo | Justificación |
-|--------------------|------------|----------------|
-| Precio | MergeSort | Necesita estabilidad (mantiene el orden de builds con igual precio). |
-| Score | QuickSort | Máxima velocidad promedio, ideal para conjuntos medianos. |
-| Marca de CPU | HeapSort | Garantiza O(n log n) en todos los casos, sin uso de memoria extra. |
+Justificación técnica:
 
-**Justificación general:**  
-Se utilizan tres algoritmos distintos porque cada uno ejemplifica una estrategia de ordenamiento distinta.  
-Esta selección permite demostrar la correcta toma de decisiones técnicas según las necesidades de rendimiento y características de los datos.
+Los datos deben mantenerse ordenados en todo momento.
+
+El inventario se modifica frecuentemente, por lo que un árbol balanceado es superior a reordenar vectores repetidamente.
+
+Permite búsquedas por rango y por precio con grandes mejoras de rendimiento.
+
+---
+
+##Manejo de archivos
+
+Se usan ifstream y ofstream.
+
+Complejidad:
+Operación	Complejidad
+Leer catálogos	O(n)
+Guardar inventario	O(n)
+Cargar inventario previo	O(n)
 
 ---
 
@@ -168,28 +318,33 @@ Estas funciones aprovechan la estructura `vector` para ofrecer un acceso rápido
 ---
 
 #### Mecanismos de lectura y escritura de archivos
+#Consulta de estructuras
 
-El sistema implementa funciones para manejar archivos CSV:
+El sistema usa:
 
-- `cargarDesdeCSV()` → Lee las builds desde el archivo `builds.csv`.  
-- `guardarEnCSV()` → Guarda nuevas builds sin sobrescribir las existentes.  
+-Recorridos inorder
 
-**Complejidad de las operaciones:**
+-Filtros por atributos
 
-| Operación | Complejidad |
-|------------|--------------|
-| Lectura secuencial | O(n) |
-| Escritura (append) | O(1) |
+-Listados completos
 
-Estos mecanismos permiten mantener la información actualizada y persistente entre ejecuciones del programa.
+-Ordenamientos específicos
 
+-Cada función corresponde a las fortalezas de su estructura.
+
+#Lectura de archivos
+
+-Carga catálogos extensos sin impactar el desempeño.
+
+-Se validan los campos de cada CSV.
+
+-Se manejan errores y líneas mal formateadas.
+
+#Escritura de archivos
+
+-Se registra cada build del usuario.
+
+-Se conserva el progreso a través de sesiones.
+
+-Formato compatible con otras aplicaciones (CSV estándar).
 ---
-
-## 6. Próximos avances
-
-En el siguiente avance se planea:
-
-- Implementar un **árbol binario de búsqueda (BST)** para búsquedas por rango de precios.  
-- Clasificar builds en **gama baja, media y alta** según el score.  
-- Verificar compatibilidad de componentes (CPU ↔ motherboard, GPU ↔ fuente).  
-- Incorporar validación automática y búsquedas más rápidas.
