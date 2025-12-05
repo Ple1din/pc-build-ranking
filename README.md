@@ -1,3 +1,20 @@
+# Evidencia problemas
+
+**Problema 1**
+
+https://leetcode.com/problems/top-k-frequent-elements/submissions/1835662131
+
+**Problema 2**
+
+https://leetcode.com/problems/design-circular-queue/submissions/1835662573/
+
+**Problema 3**
+
+https://leetcode.com/problems/shortest-path-in-binary-matrix/submissions/1835662783
+
+**videos de problemas:**
+https://drive.google.com/drive/folders/1b4DvFfeHM2oKusgbHuoG8R3EHV18KT8v?usp=drive_link
+
 # Proyecto Avance 2 – Estructuras  
 **Tema:** Ranking de PC Builds  
 
